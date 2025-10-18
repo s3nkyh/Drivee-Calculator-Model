@@ -1,57 +1,30 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.metrics import mean_absolute_error
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
 import joblib
-import os
 
-DATA_PATH = "data/processed.csv"
-MODEL_DIR = "models"
-MODEL_PATH = os.path.join(MODEL_DIR, "fair_price_model.pkl")
+df = pd.read_csv("data/processed.csv")
 
-if not os.path.exists(DATA_PATH):
-    raise FileNotFoundError(f"Файл: {DATA_PATH} не найден! Запустите prepare_data.py")
+X = df.drop(columns=["price_bid_local", "is_done"])
+y_price = df["price_bid_local"]
+y_accept = df["is_done"]
 
-df = pd.read_csv(DATA_PATH)
-print("Загружено строк:", len(df))
+X_classifier = df.drop(columns=["is_done"])
+y_classifier = y_accept
 
-target = "price_bid_local"
+X_train, X_test, y_train_p, y_test_p = train_test_split(X, y_price, test_size=0.2, random_state=42)
+Xc_train, Xc_test, yc_train, yc_test = train_test_split(X_classifier, y_classifier, test_size=0.2, random_state=42)
 
-features = [
-    "distance_in_meters",
-    "duration_in_seconds",
-    "pickup_in_meters",
-    "pickup_in_seconds",
-    "driver_rating",
-    "order_hour",
-    "order_wday",
-    "order_month",
-    "driver_experience_days"
-]
+regressor = GradientBoostingRegressor()
+regressor.fit(X_train, y_train_p)
 
-df = df.dropna(subset=features + [target])
+classifier = GradientBoostingClassifier()
+classifier.fit(Xc_train, yc_train)
 
-X = df[features]
-y = df[target]
+joblib.dump(regressor, "models/regressor_price.pkl")
+joblib.dump(classifier, "models/classifier_accept.pkl")
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+joblib.dump(list(X_train.columns), "models/feature_columns_regressor.pkl")
+joblib.dump(list(Xc_train.columns), "models/feature_columns_classifier.pkl")
 
-model = GradientBoostingRegressor(
-    n_estimators=200,
-    max_depth=5,
-    learning_rate=0.1,
-    random_state=42
-)
-model.fit(X_train, y_train)
-
-y_pred = model.predict(X_test)
-
-mae = mean_absolute_error(y_test, y_pred)
-print(f"Средняя ошибка модели: {mae:.2f} rub.")
-
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-joblib.dump(model, MODEL_PATH)
-print("Модель сохранена в:", MODEL_PATH)
+print("Модели успешно обучены и сохранены")

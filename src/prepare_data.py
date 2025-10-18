@@ -1,30 +1,27 @@
 import pandas as pd
-import os
+from datetime import datetime
 
-INPUT_PATH = "data/train.csv"
-OUTPUT_PATH = "data/processed.csv"
+df = pd.read_csv("data/train.csv")
 
-if not os.path.exists(INPUT_PATH):
-    raise FileNotFoundError(f"File {INPUT_PATH} not found.")
+df["order_timestamp"] = pd.to_datetime(df["order_timestamp"])
+df["driver_reg_date"] = pd.to_datetime(df["driver_reg_date"])
 
-df = pd.read_csv(INPUT_PATH)
-print("Data is uploaded:", df.shape)
+df["order_hour"] = df["order_timestamp"].dt.hour
+df["order_wday"] = df["order_timestamp"].dt.weekday
+df["order_month"] = df["order_timestamp"].dt.month
+df["driver_experience_days"] = (df["order_timestamp"] - df["driver_reg_date"]).dt.days
 
-print("Columns:", list(df.columns))
+df["driver_rating"] = df["driver_rating"].fillna(df["driver_rating"].median())
 
-df['bargain_happened'] = (df['price_bid_local'] != df['price_start_local']).astype(int)
-df['order_timestamp'] = pd.to_datetime(df['order_timestamp'])
-df['driver_reg_date'] = pd.to_datetime(df['driver_reg_date'])
+cols = [
+    "distance_in_meters", "duration_in_seconds",
+    "pickup_in_meters", "pickup_in_seconds",
+    "driver_rating","order_hour",
+    "order_wday", "order_month",
+    "driver_experience_days",
+    "price_start_local", "price_bid_local", "is_done"
+]
+df = df[cols]
 
-
-df['order_hour'] = df['order_timestamp'].dt.hour
-df['order_wday'] = df['order_timestamp'].dt.weekday
-df['order_month'] = df['order_timestamp'].dt.month
-
-df['driver_experience_days'] = (df['order_timestamp'] - df['driver_reg_date']).dt.days
-
-top_models = df['carmodel'].value_counts().head(10).index
-df['carmodel_top'] = df['carmodel'].where(df['carmodel'].isin(top_models), 'OTHER')
-
-df.to_csv(OUTPUT_PATH, index=False)
-print("Готовые данные сохранены в:", OUTPUT_PATH)
+df.to_csv("data/processed.csv", index=False)
+print("Данные успешно подготовлены и сохранены в data/processed.csv")
