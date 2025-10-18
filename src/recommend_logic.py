@@ -3,13 +3,17 @@ import numpy as np
 import datetime
 import joblib
 
+# Загружаем модели
 regressor = joblib.load("models/regressor_price.pkl")
 classifier = joblib.load("models/classifier_accept.pkl")
 
+# Загружаем колонки признаков
 regressor_features = joblib.load("models/feature_columns_regressor.pkl")
 classifier_features = joblib.load("models/feature_columns_classifier.pkl")
 
+
 def compute_fair_price(data):
+    """Вычисляет справедливую цену и варианты со скидкой."""
     now = datetime.datetime.now()
     df = pd.DataFrame([{
         "distance_in_meters": data["distance_in_meters"],
@@ -23,13 +27,25 @@ def compute_fair_price(data):
         "order_month": now.month,
         "price_start_local": data["price_start_local"]
     }])
+
     df = df[regressor_features]
     base_price = regressor.predict(df)[0]
-    return round(base_price, 2)
+    fair_price = round(base_price, 2)
+
+    # Варианты со скидкой
+    discounts = [0.10, 0.15, 0.20]
+    discounted_prices = {f"discount_{int(d * 100)}": round(fair_price * (1 - d), 2) for d in discounts}
+
+    return {
+        "fair_price": fair_price,
+        **discounted_prices
+    }
 
 
 def recommend_optimal_price(data):
-    base_price = compute_fair_price(data)
+    """Рассчитывает безопасную, оптимальную и рискованную цену с ожидаемым доходом."""
+    base_price_dict = compute_fair_price(data)
+    base_price = base_price_dict["fair_price"]
 
     traffic_coef = 1.15 if data.get("traffic_jam", False) else 1.0
     urgent_coef = 1.25 if data.get("urgent", False) else 1.0
