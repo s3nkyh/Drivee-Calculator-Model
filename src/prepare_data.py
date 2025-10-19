@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 
-df = pd.read_csv("data/train.csv")
+df = pd.read_csv("data/test.csv")
 
 df["order_timestamp"] = pd.to_datetime(df["order_timestamp"])
 df["driver_reg_date"] = pd.to_datetime(df["driver_reg_date"])
@@ -19,7 +19,7 @@ cols = [
     "driver_rating","order_hour",
     "order_wday", "order_month",
     "driver_experience_days",
-    "price_start_local", "price_bid_local", "is_done"
+    "price_start_local", "price_bid_local",
 ]
 df = df[cols]
 
