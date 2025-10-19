@@ -5,11 +5,11 @@ import joblib
 
 df = pd.read_csv("data/processed.csv")
 
-X = df.drop(columns=["price_bid_local", "is_done"])
+X = df.drop(columns=["price_bid_local"])
 y_price = df["price_bid_local"]
-y_accept = df["is_done"]
+y_accept = df["price_bid_local"]
 
-X_classifier = df.drop(columns=["is_done"])
+X_classifier = df.drop(columns=["price_bid_local"])
 y_classifier = y_accept
 
 X_train, X_test, y_train_p, y_test_p = train_test_split(X, y_price, test_size=0.2, random_state=42)
